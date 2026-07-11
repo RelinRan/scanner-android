@@ -9,8 +9,8 @@ android {
     defaultConfig {
         minSdkVersion 19
         targetSdkVersion 30
-        versionCode 202102251
-        versionName "1.0"
+        versionCode rootProject.findProperty("VERSION_CODE") as int
+        versionName rootProject.findProperty("VERSION_NAME")
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

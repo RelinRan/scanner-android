@@ -1,0 +1,28 @@
+# Gradle
+.gradle/
+build/
+
+# Android Studio / IntelliJ
+*.iml
+.idea/
+local.properties
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build outputs
+*.apk
+*.aar
+*.ap_
+*.dex
+
+# Keep the bundled ZXing core jar
+!app/libs/*.jar
+
+# Keystore
+*.jks
+*.keystore
+
+# Editor / agent tooling
+.zcode/
