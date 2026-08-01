@@ -1,167 +1,112 @@
-# Scanner
+# Scanner Compose 扫码库
 
-[English](./README.md) | **简体中文**
+`android.scanner.api` 是一个 Kotlin Android Library，提供 Camera2 实时 Bitmap、Compose 扫描区域预览，以及二维码/条形码 Bitmap 编解码能力。
 
-基于 [ZXing](https://github.com/zxing/zxing) `core-3.4.1` 构建的 Android 条形码 / 二维码扫描与生成库。提供开箱即用的相机扫码 `View`、识别率优化后的解码管线，以及创建条形码、二维码和从图片解码的工具方法。
+## 环境要求
 
-## 功能
+- Android API 26 及以上
+- Kotlin 与 Jetpack Compose
+- Gradle 8.11.1
+- 相机权限由宿主应用申请
 
-- 相机实时扫描条形码与二维码
-- 从图片文件或 `Bitmap` 解码条形码 / 二维码
-- 创建二维码与条形码（CODE_128 等）
-- 识别率算法优化及图形变形问题处理
-- 扫码视图可定制：背景颜色、角标样式、扫描线、动画时长
-- 内置手电筒开关、暂停 / 恢复解码、焦点传感器与扫码振动
+## 构建
 
-## 预览
-
-![预览](./ic_preview.png)
-
-## 集成
-
-### 方式一 — 从 GitHub Releases 下载 AAR
-
-在 [Releases 页面](https://github.com/RelinRan/Scanner/releases) 下载最新的 `scanner-<version>.aar`，放入模块的 `libs/` 目录，然后在 `app/build.gradle` 中配置：
-
-```groovy
-android {
-    // ...
-    repositories {
-        flatDir {
-            dirs 'libs'
-        }
-    }
-}
-
-dependencies {
-    implementation(name: 'scanner-1.1.0', ext: 'aar')
-}
+```bash
+./gradlew :app:assembleRelease
 ```
 
-### 方式二 — JitPack
+ZXing 使用项目内的本地依赖：`app/libs/core-3.5.3.jar`。
 
-在根目录 `build.gradle` / `settings.gradle` 中添加 JitPack 仓库：
+## 相机权限
 
-```groovy
-allprojects {
-    repositories {
-        // ...
-        maven { url 'https://jitpack.io' }
-    }
-}
-```
-
-然后在 `app/build.gradle` 中添加依赖：
-
-```groovy
-dependencies {
-    implementation 'com.github.RelinRan:Scanner:1.1.0'
-}
-```
-
-## 权限
-
-> **注意：** Android 6.0（API 23）及以上需动态申请 `CAMERA` 权限。
+宿主应用需要声明并动态申请权限：
 
 ```xml
 <uses-permission android:name="android.permission.CAMERA" />
-<uses-permission android:name="android.permission.VIBRATE" />
 ```
 
-## 用法
+## 相机 Bitmap
 
-### ScanCodeView
+`ScannerCamera` 使用 Camera2 打开摄像头，通过 `StateFlow<Bitmap?>` 发布最新的 JPEG 帧。如果请求分辨率不受设备支持，会自动选择宽高比例和尺寸最接近的分辨率，实际分辨率可通过 `actualResolution` 获取。
 
-```xml
-<com.android.zxing.view.ScanCodeView
-    android:id="@+id/scan_code"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent" />
+```kotlin
+val camera = remember {
+    ScannerCamera(
+        context,
+        ScannerCameraConfig(
+            cameraId = "0",
+            width = 1280,
+            height = 720,
+            torchEnabled = false,
+            autoFocus = true,
+        ),
+    )
+}
+val bitmap by camera.bitmap.collectAsState()
+
+DisposableEffect(camera) {
+    camera.start()
+    onDispose { camera.close() }
+}
+
+ScannerPreview(bitmap = bitmap)
 ```
 
-### 扫码监听
+## Compose 预览
 
-```java
-ScanCodeView scanCode = findViewById(R.id.scan_code);
-scanCode.setOnScanCodeListener(new OnScanCodeListener() {
-    @Override
-    public void onScanCodeSucceed(Result result) {
-        String code = result.getText();
-    }
+`ScannerPreview` 显示 Bitmap，并绘制可配置的扫描区域。区域坐标使用 `0f..1f` 的归一化值。
 
-    @Override
-    public void onScanCodeFailed(Exception exception) {
-        // 当前帧未识别到结果时回调
-    }
-});
+```kotlin
+ScannerPreview(
+    bitmap = bitmap,
+    config = ScannerPreviewConfig(
+        region = ScanRegion(0.1f, 0.25f, 0.9f, 0.75f),
+        outsideColor = Color.Black.copy(alpha = 0.55f),
+        insideColor = Color.Transparent,
+        borderColor = Color.White,
+        borderWidth = 2.dp,
+    ),
+)
 ```
 
-### 手电筒
+## 二维码 Bitmap 编解码
 
-```java
-ScanCodeView scanCode = findViewById(R.id.scan_code);
-scanCode.toggleTorch();
+`BarcodeCodec` 支持二维码内容与 Bitmap 互转，并支持配置输出尺寸。
+
+```kotlin
+val encoded = BarcodeCodec.encodeQr("scanner-value", BitmapSize(512, 512))
+if (encoded is ScanOutcome.Success) {
+    val decoded = BarcodeCodec.decode(encoded.value)
+}
 ```
 
-### 暂停 / 恢复解码
+失败通过 `ScanOutcome.Failure` 和 `ScannerError` 返回。空内容和非法尺寸会在分配 Bitmap 前被拒绝。
 
-```java
-ScanCodeView scanCode = findViewById(R.id.scan_code);
-scanCode.onPause();   // 暂停解码
-scanCode.onResume();  // 恢复解码
+## Debug 日志
+
+默认关闭调试日志，开发时可开启：
+
+```kotlin
+ScannerDebug.enabled = true
 ```
 
-### 创建二维码
+日志包含 Camera2 打开/关闭、分辨率选择、会话配置、二维码编解码参数、结果和异常。可以通过 `ScannerDebug.logger` 接入宿主日志系统。
 
-```java
-Bitmap qrCode = ZXWriter.createQRCode("content");
-```
+## 公共 API
 
-### 创建条形码
+所有公共 API 都位于 `android.scanner.api`：
 
-```java
-Bitmap barCode = ZXWriter.createCode(BarcodeFormat.CODE_128, "content", 300, 150);
-```
+- `ScannerCamera`、`ScannerCameraConfig`
+- `ScannerPreview`、`ScannerPreviewConfig`、`ScanRegion`
+- `BarcodeCodec`、`BitmapSize`
+- `ScanResult`、`ScanOutcome`、`ScannerError`
+- `BarcodeFormat`、`ScannerConfig`、`ScanMode`、`ScannerState`、`ScannerController`
+- `ScannerDebug`
 
-### 从图片文件解码
+## 生命周期
 
-```java
-File file = new File("/sdcard/Download/0001.png");
-ZXReader.fromFile(file, new OnScanCodeListener() {
-    @Override
-    public void onScanCodeSucceed(Result result) {
-        String code = result.getText();
-    }
-
-    @Override
-    public void onScanCodeFailed(Exception exception) {
-        // 解码失败
-    }
-});
-```
-
-## 属性
-
-| 属性 | 格式 | 说明 |
-|---|---|---|
-| `areaCenterX` | dimension &#124; reference | 扫描中心 X |
-| `areaCenterY` | dimension &#124; reference | 扫描中心 Y |
-| `areaWidth` | dimension &#124; reference | 扫描宽度 |
-| `areaHeight` | dimension &#124; reference | 扫描高度 |
-| `backgroundColor` | color &#124; reference | 扫描背景颜色 |
-| `cornerVisible` | boolean &#124; reference | 角标可见性 |
-| `cornerLineColor` | color &#124; reference | 角标线条颜色 |
-| `cornerLineMargin` | dimension &#124; reference | 角标线条间距 |
-| `cornerLineLength` | dimension &#124; reference | 角标线条长度 |
-| `cornerLineWidth` | dimension &#124; reference | 角标线条宽度 |
-| `duration` | integer &#124; reference | 扫描线动画时长（毫秒） |
-| `lineDrawable` | integer &#124; reference | 扫描线资源 |
-| `vibrator` | boolean &#124; reference | 扫码成功是否振动 |
-
-## 版本
-
-本项目遵循 [语义化版本 2.0.0](https://semver.org/lang/zh-CN/)。可用版本见 [发布页面](https://github.com/RelinRan/Scanner/releases)，发布历史见 [更新日志](./CHANGELOG.md)。
+`ScannerCamera` 管理 Camera2 设备、采集会话、ImageReader 和后台线程。离开 Compose 或销毁页面时必须调用 `close()`。获得运行时相机权限前不要调用相机方法。
 
 ## 开源协议
 
-基于 [MIT 协议](./LICENSE) 开源。本库打包并依赖第三方软件，致谢与第三方协议详见 [软件声明](./docs/NOTICE.zh-CN.md)。
+MIT，详见 [LICENSE](./LICENSE) 和 [docs/NOTICE.zh-CN.md](./docs/NOTICE.zh-CN.md)。
