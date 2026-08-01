@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.android.zxing"
+    namespace = "android.scanner.api"
     compileSdk = 36
 
     defaultConfig {

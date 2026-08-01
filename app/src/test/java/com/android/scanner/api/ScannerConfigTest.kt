@@ -1,4 +1,4 @@
-package com.android.scanner.api
+package android.scanner.api
 
 import kotlin.time.Duration.Companion.milliseconds
 import org.junit.Assert.assertEquals

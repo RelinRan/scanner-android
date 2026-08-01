@@ -1,4 +1,4 @@
-package com.android.scanner.api
+package android.scanner.api
 
 import kotlinx.coroutines.flow.StateFlow
 

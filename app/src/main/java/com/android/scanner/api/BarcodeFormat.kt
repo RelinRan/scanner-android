@@ -1,4 +1,4 @@
-package com.android.scanner.api
+package android.scanner.api
 
 public enum class BarcodeFormat {
     Aztec,

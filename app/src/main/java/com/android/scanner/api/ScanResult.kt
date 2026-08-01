@@ -1,4 +1,4 @@
-package com.android.scanner.api
+package android.scanner.api
 
 import android.graphics.Point
 import android.graphics.Rect

@@ -1,8 +1,8 @@
-package com.android.scanner.internal.policy
+package android.scanner.internal.policy
 
-import com.android.scanner.api.BarcodeFormat
-import com.android.scanner.api.ScanMode
-import com.android.scanner.api.ScanResult
+import android.scanner.api.BarcodeFormat
+import android.scanner.api.ScanMode
+import android.scanner.api.ScanResult
 import kotlin.time.Duration
 
 internal sealed interface PolicyDecision {

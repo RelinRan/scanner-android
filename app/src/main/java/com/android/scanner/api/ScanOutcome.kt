@@ -1,4 +1,4 @@
-package com.android.scanner.api
+package android.scanner.api
 
 public sealed interface ScanOutcome<out T> {
     public data class Success<T>(val value: T) : ScanOutcome<T>
