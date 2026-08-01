@@ -1,4 +1,61 @@
-# Scanner
+# Scanner Compose Library
+
+Modern Kotlin/Compose barcode library for Android API 26+. The public API is under `android.scanner.api`.
+
+## Install
+
+```groovy
+implementation("your.group:scanner:next")
+```
+
+Declare and request camera permission in the host app:
+
+```xml
+<uses-permission android:name="android.permission.CAMERA" />
+```
+
+## Camera Bitmap Source
+
+`CameraBitmap` uses Camera2 and exposes the latest preview frame as a `StateFlow<Bitmap?>`:
+
+```kotlin
+val camera = remember {
+    CameraBitmap(
+        context,
+        CameraBitmapConfig(
+            cameraId = "0",
+            width = 1280,
+            height = 720,
+            torchEnabled = false,
+            autoFocus = true,
+        ),
+    )
+}
+
+val bitmap by camera.bitmap.collectAsState()
+DisposableEffect(camera) {
+    camera.start()
+    onDispose { camera.close() }
+}
+BitmapPreview(bitmap = bitmap)
+```
+
+`BitmapPreviewConfig` controls normalized scan-region bounds, inside/outside colors, border color, and border width.
+
+## QR Bitmap Conversion
+
+```kotlin
+val encoded = BarcodeBitmapCodec.encodeQr("content", BitmapSize(512, 512))
+val results = (encoded as? ScanOutcome.Success)?.value?.let { BarcodeBitmapCodec.decode(it) }
+```
+
+The codec returns `ScanOutcome`, so invalid input and recognition failures are typed and do not throw during normal operation.
+
+## Barcode Encoding
+
+`BarcodeEncoder` supports QR and common one-dimensional formats and accepts configurable dimensions, colors, margins, character set, and QR error correction.
+
+The library owns camera resources only while the consumer keeps `CameraBitmap` alive. Always call `close()` from `DisposableEffect` or another lifecycle owner.
 
 **English** | [简体中文](./README.zh-CN.md)
 
