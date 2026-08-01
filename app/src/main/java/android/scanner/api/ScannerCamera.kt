@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageFormat
-import android.graphics.Rect
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
@@ -14,6 +13,7 @@ import android.hardware.camera2.CaptureRequest
 import android.media.ImageReader
 import android.os.Handler
 import android.os.HandlerThread
+import android.util.Size
 import android.view.Surface
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,6 +43,8 @@ public class ScannerCamera(
     private var device: CameraDevice? = null
     private var session: CameraCaptureSession? = null
     private var reader: ImageReader? = null
+    public var actualResolution: Size? = null
+        private set
 
     @SuppressLint("MissingPermission")
     public fun start(surface: Surface? = null) {
@@ -62,6 +64,7 @@ public class ScannerCamera(
         device?.close(); device = null
         reader?.close(); reader = null
         _bitmap.value = null
+        actualResolution = null
     }
 
     override fun close() {
@@ -70,7 +73,13 @@ public class ScannerCamera(
     }
 
     private fun createSession(camera: CameraDevice, surface: Surface?) {
-        val imageReader = ImageReader.newInstance(config.width, config.height, ImageFormat.JPEG, 2)
+        val characteristics = manager.getCameraCharacteristics(config.cameraId)
+        val map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+        val supported = map?.getOutputSizes(ImageFormat.JPEG).orEmpty().toList()
+        val selected = ScannerCameraResolutionSelector.select(supported, Size(config.width, config.height))
+            ?: Size(config.width, config.height)
+        actualResolution = selected
+        val imageReader = ImageReader.newInstance(selected.width, selected.height, ImageFormat.JPEG, 2)
         reader = imageReader
         imageReader.setOnImageAvailableListener({ source ->
             source.acquireLatestImage()?.use { image ->
@@ -94,5 +103,21 @@ public class ScannerCamera(
             }
             override fun onConfigureFailed(session: CameraCaptureSession) = close()
         }, handler)
+    }
+
+}
+
+internal object ScannerCameraResolutionSelector {
+    fun select(supported: List<Size>, requested: Size): Size? {
+        if (supported.isEmpty()) return null
+        return supported.minWithOrNull(
+            compareBy<Size> {
+                val requestedRatio = requested.width.toDouble() / requested.height
+                val ratio = it.width.toDouble() / it.height
+                kotlin.math.abs(ratio - requestedRatio)
+            }.thenBy {
+                kotlin.math.abs(it.width - requested.width) + kotlin.math.abs(it.height - requested.height)
+            },
+        )
     }
 }
