@@ -35,6 +35,7 @@ public class ScannerCamera(
     context: Context,
     private val config: ScannerCameraConfig = ScannerCameraConfig(),
 ) : AutoCloseable {
+    private companion object { const val TAG = "ScannerCamera" }
     private val manager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
     private val _bitmap = MutableStateFlow<Bitmap?>(null)
     public val bitmap: StateFlow<Bitmap?> = _bitmap.asStateFlow()
@@ -48,18 +49,21 @@ public class ScannerCamera(
 
     @SuppressLint("MissingPermission")
     public fun start(surface: Surface? = null) {
-        if (device != null) return
+        ScannerDebug.log(TAG, "start cameraId=${config.cameraId}, requested=${config.width}x${config.height}, torch=${config.torchEnabled}, autoFocus=${config.autoFocus}")
+        if (device != null) { ScannerDebug.log(TAG, "start ignored: camera already open"); return }
         manager.openCamera(config.cameraId, object : CameraDevice.StateCallback() {
             override fun onOpened(camera: CameraDevice) {
+                ScannerDebug.log(TAG, "camera opened id=${camera.id}")
                 device = camera
                 createSession(camera, surface)
             }
-            override fun onDisconnected(camera: CameraDevice) = close()
-            override fun onError(camera: CameraDevice, error: Int) = close()
+            override fun onDisconnected(camera: CameraDevice) { ScannerDebug.log(TAG, "camera disconnected id=${camera.id}"); close() }
+            override fun onError(camera: CameraDevice, error: Int) { ScannerDebug.error(TAG, "camera error=$error id=${camera.id}"); close() }
         }, handler)
     }
 
     public fun stop() {
+        ScannerDebug.log(TAG, "stop actualResolution=$actualResolution")
         session?.close(); session = null
         device?.close(); device = null
         reader?.close(); reader = null
@@ -79,6 +83,7 @@ public class ScannerCamera(
         val selected = ScannerCameraResolutionSelector.select(supported, Size(config.width, config.height))
             ?: Size(config.width, config.height)
         actualResolution = selected
+        ScannerDebug.log(TAG, "selected resolution requested=${config.width}x${config.height}, actual=${selected.width}x${selected.height}, supportedCount=${supported.size}")
         val imageReader = ImageReader.newInstance(selected.width, selected.height, ImageFormat.JPEG, 2)
         reader = imageReader
         imageReader.setOnImageAvailableListener({ source ->
@@ -92,6 +97,7 @@ public class ScannerCamera(
         camera.createCaptureSession(outputs, object : CameraCaptureSession.StateCallback() {
             override fun onConfigured(cameraSession: CameraCaptureSession) {
                 session = cameraSession
+                ScannerDebug.log(TAG, "capture session configured targets=${outputs.size}")
                 val request = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
                     addTarget(imageReader.surface)
                     surface?.let(::addTarget)
@@ -100,8 +106,9 @@ public class ScannerCamera(
                     if (config.torchEnabled) set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH)
                 }.build()
                 cameraSession.setRepeatingRequest(request, null, handler)
+                ScannerDebug.log(TAG, "repeating preview request started")
             }
-            override fun onConfigureFailed(session: CameraCaptureSession) = close()
+            override fun onConfigureFailed(session: CameraCaptureSession) { ScannerDebug.error(TAG, "capture session configuration failed"); close() }
         }, handler)
     }
 

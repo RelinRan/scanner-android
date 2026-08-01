@@ -19,11 +19,14 @@ public data class BitmapSize(val width: Int, val height: Int) {
 }
 
 public object BarcodeBitmapCodec {
+    private const val TAG = "BarcodeBitmapCodec"
     public fun encodeQr(
         content: String,
         size: BitmapSize = BitmapSize(512, 512),
     ): ScanOutcome<Bitmap> {
+        ScannerDebug.log(TAG, "encodeQr start contentLength=${content.length}, size=${size.width}x${size.height}")
         if (content.isBlank()) {
+            ScannerDebug.log(TAG, "encodeQr rejected blank content")
             return ScanOutcome.Failure(ScannerError.InvalidInput("Content cannot be blank"))
         }
         return try {
@@ -38,13 +41,17 @@ public object BarcodeBitmapCodec {
                     EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.H,
                 ),
             )
-            ScanOutcome.Success(matrix.toBitmap())
+            val bitmap = matrix.toBitmap()
+            ScannerDebug.log(TAG, "encodeQr success bitmap=${bitmap.width}x${bitmap.height}")
+            ScanOutcome.Success(bitmap)
         } catch (error: Exception) {
+            ScannerDebug.error(TAG, "encodeQr failed", error)
             ScanOutcome.Failure(ScannerError.EncodingFailed(error))
         }
     }
 
     public fun decode(bitmap: Bitmap): ScanOutcome<List<ScanResult>> {
+        ScannerDebug.log(TAG, "decode start bitmap=${bitmap.width}x${bitmap.height}")
         if (bitmap.width <= 0 || bitmap.height <= 0) {
             return ScanOutcome.Failure(ScannerError.InvalidInput("Bitmap dimensions must be positive"))
         }
@@ -53,6 +60,7 @@ public object BarcodeBitmapCodec {
         val source = RGBLuminanceSource(bitmap.width, bitmap.height, pixels)
         return try {
             val result = MultiFormatReader().decode(BinaryBitmap(HybridBinarizer(source)))
+            ScannerDebug.log(TAG, "decode success format=${result.barcodeFormat}, textLength=${result.text?.length ?: 0}")
             ScanOutcome.Success(
                 listOf(
                     ScanResult(
@@ -64,6 +72,7 @@ public object BarcodeBitmapCodec {
                 ),
             )
         } catch (error: ReaderException) {
+            ScannerDebug.error(TAG, "decode failed: no barcode found", error)
             ScanOutcome.Failure(ScannerError.RecognitionFailed(error))
         }
     }
