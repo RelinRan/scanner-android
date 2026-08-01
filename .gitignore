@@ -17,7 +17,7 @@ Thumbs.db
 *.ap_
 *.dex
 
-# Keep the bundled ZXing core jar
+# Keep local scanner dependency jars
 !app/libs/*.jar
 
 # Keystore

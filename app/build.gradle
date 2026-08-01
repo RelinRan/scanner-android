@@ -62,8 +62,7 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
-    implementation(libs.mlkit.barcode.scanning)
-    implementation(libs.zxing.core)
+    implementation(files("libs/core-3.5.3.jar"))
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
