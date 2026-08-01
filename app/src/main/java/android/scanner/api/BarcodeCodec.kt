@@ -18,8 +18,8 @@ public data class BitmapSize(val width: Int, val height: Int) {
     }
 }
 
-public object BarcodeBitmapCodec {
-    private const val TAG = "BarcodeBitmapCodec"
+public object BarcodeCodec {
+    private const val TAG = "BarcodeCodec"
     public fun encodeQr(
         content: String,
         size: BitmapSize = BitmapSize(512, 512),

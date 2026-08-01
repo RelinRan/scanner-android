@@ -45,8 +45,8 @@ ScannerPreview(bitmap = bitmap)
 ## QR Bitmap Conversion
 
 ```kotlin
-val encoded = BarcodeBitmapCodec.encodeQr("content", BitmapSize(512, 512))
-val results = (encoded as? ScanOutcome.Success)?.value?.let { BarcodeBitmapCodec.decode(it) }
+val encoded = BarcodeCodec.encodeQr("content", BitmapSize(512, 512))
+val results = (encoded as? ScanOutcome.Success)?.value?.let { BarcodeCodec.decode(it) }
 ```
 
 The codec returns `ScanOutcome`, so invalid input and recognition failures are typed and do not throw during normal operation.
