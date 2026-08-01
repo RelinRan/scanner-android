@@ -16,13 +16,13 @@ Declare and request camera permission in the host app:
 
 ## Camera Bitmap Source
 
-`CameraBitmap` uses Camera2 and exposes the latest preview frame as a `StateFlow<Bitmap?>`:
+`ScannerCamera` uses Camera2 and exposes the latest preview frame as a `StateFlow<Bitmap?>`:
 
 ```kotlin
 val camera = remember {
-    CameraBitmap(
+    ScannerCamera(
         context,
-        CameraBitmapConfig(
+        ScannerCameraConfig(
             cameraId = "0",
             width = 1280,
             height = 720,
@@ -37,10 +37,10 @@ DisposableEffect(camera) {
     camera.start()
     onDispose { camera.close() }
 }
-BitmapPreview(bitmap = bitmap)
+ScannerPreview(bitmap = bitmap)
 ```
 
-`BitmapPreviewConfig` controls normalized scan-region bounds, inside/outside colors, border color, and border width.
+`ScannerPreviewConfig` controls normalized scan-region bounds, inside/outside colors, border color, and border width.
 
 ## QR Bitmap Conversion
 
@@ -55,7 +55,7 @@ The codec returns `ScanOutcome`, so invalid input and recognition failures are t
 
 `BarcodeEncoder` supports QR and common one-dimensional formats and accepts configurable dimensions, colors, margins, character set, and QR error correction.
 
-The library owns camera resources only while the consumer keeps `CameraBitmap` alive. Always call `close()` from `DisposableEffect` or another lifecycle owner.
+The library owns camera resources only while the consumer keeps `ScannerCamera` alive. Always call `close()` from `DisposableEffect` or another lifecycle owner.
 
 **English** | [简体中文](./README.zh-CN.md)
 
