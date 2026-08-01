@@ -14,7 +14,7 @@ class ScannerCameraResolutionTest {
         val camera = ScannerCameraResolutionSelector
         val selected = camera.select(
             supported = listOf(Size(640, 480), Size(1280, 720), Size(1920, 1080)),
-            requested = Size(1000, 700),
+            requested = Size(1000, 600),
         )
 
         assertEquals(Size(1280, 720), selected)
