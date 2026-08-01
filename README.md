@@ -1,73 +1,59 @@
-﻿# Scanner Compose Library
+# Scanner Compose Library
 
-[绠€浣撲腑鏂嘳(./README.zh-CN.md)
+[简体中文](./README.zh-CN.md)
 
-`android.scanner.api` is a Kotlin Android library for Camera2 bitmap previews, Compose scan overlays, and QR/barcode bitmap conversion.
+Modern Kotlin Android library under `android.scanner.api`.
 
-## Requirements
+## Features
 
+- Camera2 Bitmap stream with automatic nearest supported resolution selection
+- Jetpack Compose overlay with configurable scan region and colors
+- QR code Bitmap encode/decode with configurable output size
+- Optional debug logging for camera and codec flows
 - Android API 26+
-- Kotlin and Jetpack Compose
-- Gradle 8.11.1
-- Camera permission requested by the host application
-
-## Installation
-
-Build the AAR with:
-
-```bash
-./gradlew :app:assembleRelease
-```
-
-The library uses the local ZXing dependency at `app/libs/core-3.5.3.jar`.
 
 ## Permission
 
-Add the permission to the host application's manifest and request it at runtime:
+The host app must declare and request camera permission:
 
 ```xml
 <uses-permission android:name="android.permission.CAMERA" />
 ```
 
-## Camera Preview
-
-`ScannerPreview` opens a Camera2 device and publishes the newest JPEG frame as `StateFlow<Bitmap?>`. Unsupported requested resolutions are replaced with the closest supported camera size. The selected size is available as `actualResolution`.
+## Camera Bitmap
 
 ```kotlin
-@Composable
-fun CameraScreen(context: Context) {
-    val camera = remember {
-        ScannerPreview(
-            context = context,
-            config = ScannerOverlayConfig(
-                cameraId = "0",
-                width = 1280,
-                height = 720,
-                torchEnabled = false,
-                autoFocus = true,
-            ),
-        )
-    }
-    val bitmap by camera.bitmap.collectAsState()
-
-    DisposableEffect(camera) {
-        camera.start()
-        onDispose { camera.close() }
-    }
-
-    ScannerOverlay(bitmap = bitmap)
+val camera = remember {
+    ScannerPreview(
+        context = context,
+        config = ScannerPreviewConfig(
+            cameraId = "0",
+            width = 1280,
+            height = 720,
+            torchEnabled = false,
+            autoFocus = true,
+        ),
+    )
 }
+val bitmap by camera.bitmap.collectAsState()
+
+DisposableEffect(camera) {
+    camera.start()
+    onDispose { camera.close() }
+}
+
+ScannerOverlay(bitmap = bitmap)
 ```
+
+`actualResolution` exposes the size selected from the camera's supported outputs.
 
 ## Compose Overlay
 
-`ScannerPreview` draws a Bitmap and a configurable scan region. Coordinates are normalized from `0f` to `1f`.
-
 ```kotlin
-ScannerPreview(
+ScannerOverlay(
     bitmap = bitmap,
     config = ScannerOverlayConfig(
-        region = ScanRegion(left = 0.1f, top = 0.25f, right = 0.9f, bottom = 0.75f),
+        region = ScanRegion(0.1f, 0.25f, 0.9f, 0.75f),
         outsideColor = Color.Black.copy(alpha = 0.55f),
         insideColor = Color.Transparent,
         borderColor = Color.White,
@@ -76,9 +62,7 @@ ScannerPreview(
 )
 ```
 
-## QR Bitmap Conversion
-
-`BarcodeCodec` converts QR content to a configurable-size Bitmap and decodes a Bitmap back to typed scan results.
+## QR Bitmap Codec
 
 ```kotlin
 val encoded = BarcodeCodec.encodeQr("scanner-value", BitmapSize(512, 512))
@@ -87,34 +71,28 @@ if (encoded is ScanOutcome.Success) {
 }
 ```
 
-Failures are returned as `ScanOutcome.Failure` with a `ScannerError` value. Blank content and invalid dimensions are rejected before allocation.
+Results use `ScanOutcome` and `ScannerError`; normal failures do not throw.
 
 ## Debug Logging
-
-Debug logging is disabled by default. Enable it during development:
 
 ```kotlin
 ScannerDebug.enabled = true
 ```
 
-Logs include Camera2 open/close events, resolution selection, capture-session setup, QR encode/decode parameters, results, and failures. A custom logger can be supplied through `ScannerDebug.logger`.
+Logs cover camera opening, resolution selection, capture sessions, QR encoding, decoding, and failures. Replace `ScannerDebug.logger` to integrate with the host logger.
 
-## Public API
+## Local Dependency
 
-All public classes are in `android.scanner.api`:
+ZXing is bundled as `app/libs/core-3.5.3.jar`. Build the release AAR with:
 
-- `ScannerPreview`, `ScannerOverlayConfig`
-- `ScannerPreview`, `ScannerOverlayConfig`, `ScanRegion`
-- `BarcodeCodec`, `BitmapSize`
-- `ScanResult`, `ScanOutcome`, `ScannerError`
-- `BarcodeFormat`, `ScannerConfig`, `ScanMode`, `ScannerState`, `ScannerController`
-- `ScannerDebug`
+```bash
+./gradlew :app:assembleRelease
+```
 
 ## Lifecycle
 
-`ScannerPreview` owns a Camera2 device, capture session, image reader, and background thread. Call `close()` when the owner leaves composition or the screen is destroyed. Do not call camera methods before runtime permission is granted.
+Call `ScannerPreview.close()` when the owning screen or composition is destroyed. Do not start it before camera permission is granted.
 
 ## License
 
 MIT. See [LICENSE](./LICENSE) and [docs/NOTICE.md](./docs/NOTICE.md).
-

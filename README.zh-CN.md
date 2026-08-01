@@ -1,35 +1,34 @@
-﻿# Scanner Compose 鎵爜搴?
+# Scanner Compose 扫码库
+
 [English](./README.md)
 
-`android.scanner.api` 鏄竴涓?Kotlin Android Library锛屾彁渚?Camera2 瀹炴椂 Bitmap銆丆ompose 鎵弿鍖哄煙棰勮锛屼互鍙婁簩缁寸爜/鏉″舰鐮?Bitmap 缂栬В鐮佽兘鍔涖€?
-## 鐜瑕佹眰
+基于 Kotlin、Camera2 和 Jetpack Compose，公共 API 位于 `android.scanner.api`。
 
-- Android API 26 鍙婁互涓?- Kotlin 涓?Jetpack Compose
-- Gradle 8.11.1
-- 鐩告満鏉冮檺鐢卞涓诲簲鐢ㄧ敵璇?
-## 鏋勫缓
+## 功能
 
-```bash
-./gradlew :app:assembleRelease
-```
+- Camera2 实时输出 Bitmap
+- 自动选择最接近的摄像头支持分辨率
+- 可配置扫描区域、遮罩颜色和边框的 Compose 覆盖层
+- 二维码内容与 Bitmap 互转
+- 可配置二维码输出尺寸
+- 相机和编解码调试日志
+- 最低支持 Android API 26
 
-ZXing 浣跨敤椤圭洰鍐呯殑鏈湴渚濊禆锛歚app/libs/core-3.5.3.jar`銆?
-## 鐩告満鏉冮檺
+## 权限
 
-瀹夸富搴旂敤闇€瑕佸０鏄庡苟鍔ㄦ€佺敵璇锋潈闄愶細
+宿主应用需要声明并动态申请相机权限：
 
 ```xml
 <uses-permission android:name="android.permission.CAMERA" />
 ```
 
-## 鐩告満 Bitmap
+## 相机 Bitmap
 
-`ScannerPreview` 浣跨敤 Camera2 鎵撳紑鎽勫儚澶达紝閫氳繃 `StateFlow<Bitmap?>` 鍙戝竷鏈€鏂扮殑 JPEG 甯с€傚鏋滆姹傚垎杈ㄧ巼涓嶅彈璁惧鏀寔锛屼細鑷姩閫夋嫨瀹介珮姣斾緥鍜屽昂瀵告渶鎺ヨ繎鐨勫垎杈ㄧ巼锛屽疄闄呭垎杈ㄧ巼鍙€氳繃 `actualResolution` 鑾峰彇銆?
 ```kotlin
 val camera = remember {
     ScannerPreview(
-        context,
-        ScannerOverlayConfig(
+        context = context,
+        config = ScannerPreviewConfig(
             cameraId = "0",
             width = 1280,
             height = 720,
@@ -48,11 +47,12 @@ DisposableEffect(camera) {
 ScannerOverlay(bitmap = bitmap)
 ```
 
-## Compose 棰勮
+`actualResolution` 可以获取摄像头最终采用的实际分辨率。
 
-`ScannerPreview` 鏄剧ず Bitmap锛屽苟缁樺埗鍙厤缃殑鎵弿鍖哄煙銆傚尯鍩熷潗鏍囦娇鐢?`0f..1f` 鐨勫綊涓€鍖栧€笺€?
+## Compose 覆盖层
+
 ```kotlin
-ScannerPreview(
+ScannerOverlay(
     bitmap = bitmap,
     config = ScannerOverlayConfig(
         region = ScanRegion(0.1f, 0.25f, 0.9f, 0.75f),
@@ -64,8 +64,8 @@ ScannerPreview(
 )
 ```
 
-## 浜岀淮鐮?Bitmap 缂栬В鐮?
-`BarcodeCodec` 鏀寔浜岀淮鐮佸唴瀹逛笌 Bitmap 浜掕浆锛屽苟鏀寔閰嶇疆杈撳嚭灏哄銆?
+## 二维码 Bitmap 编解码
+
 ```kotlin
 val encoded = BarcodeCodec.encodeQr("scanner-value", BitmapSize(512, 512))
 if (encoded is ScanOutcome.Success) {
@@ -73,28 +73,28 @@ if (encoded is ScanOutcome.Success) {
 }
 ```
 
-澶辫触閫氳繃 `ScanOutcome.Failure` 鍜?`ScannerError` 杩斿洖銆傜┖鍐呭鍜岄潪娉曞昂瀵镐細鍦ㄥ垎閰?Bitmap 鍓嶈鎷掔粷銆?
-## Debug 鏃ュ織
+结果通过 `ScanOutcome` 和 `ScannerError` 返回，普通识别失败不会抛出异常。
 
-榛樿鍏抽棴璋冭瘯鏃ュ織锛屽紑鍙戞椂鍙紑鍚細
+## 调试日志
 
 ```kotlin
 ScannerDebug.enabled = true
 ```
 
-鏃ュ織鍖呭惈 Camera2 鎵撳紑/鍏抽棴銆佸垎杈ㄧ巼閫夋嫨銆佷細璇濋厤缃€佷簩缁寸爜缂栬В鐮佸弬鏁般€佺粨鏋滃拰寮傚父銆傚彲浠ラ€氳繃 `ScannerDebug.logger` 鎺ュ叆瀹夸富鏃ュ織绯荤粺銆?
-## 鍏叡 API
+日志包含相机打开、分辨率选择、采集会话、二维码编码、解码和异常。可以替换 `ScannerDebug.logger` 接入宿主日志系统。
 
-鎵€鏈夊叕鍏?API 閮戒綅浜?`android.scanner.api`锛?
-- `ScannerPreview`銆乣ScannerOverlayConfig`
-- `ScannerPreview`銆乣ScannerOverlayConfig`銆乣ScanRegion`
-- `BarcodeCodec`銆乣BitmapSize`
-- `ScanResult`銆乣ScanOutcome`銆乣ScannerError`
-- `BarcodeFormat`銆乣ScannerConfig`銆乣ScanMode`銆乣ScannerState`銆乣ScannerController`
-- `ScannerDebug`
+## 本地依赖
 
-## 鐢熷懡鍛ㄦ湡
+ZXing 本地 JAR 位于 `app/libs/core-3.5.3.jar`。构建 AAR：
 
-`ScannerPreview` 绠＄悊 Camera2 璁惧銆侀噰闆嗕細璇濄€両mageReader 鍜屽悗鍙扮嚎绋嬨€傜寮€ Compose 鎴栭攢姣侀〉闈㈡椂蹇呴』璋冪敤 `close()`銆傝幏寰楄繍琛屾椂鐩告満鏉冮檺鍓嶄笉瑕佽皟鐢ㄧ浉鏈烘柟娉曘€?
-## 寮€婧愬崗璁?
-MIT锛岃瑙?[LICENSE](./LICENSE) 鍜?[docs/NOTICE.zh-CN.md](./docs/NOTICE.zh-CN.md)銆?
+```bash
+./gradlew :app:assembleRelease
+```
+
+## 生命周期
+
+页面或 Compose 销毁时调用 `ScannerPreview.close()`。获得运行时相机权限前不要启动相机。
+
+## 开源协议
+
+MIT，详见 [LICENSE](./LICENSE) 和 [docs/NOTICE.zh-CN.md](./docs/NOTICE.zh-CN.md)。
