@@ -4,7 +4,10 @@ import android.util.Size
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class ScannerCameraResolutionTest {
     @Test
     fun `selects closest supported resolution by aspect ratio then distance`() {
