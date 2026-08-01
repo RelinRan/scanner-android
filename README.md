@@ -1,6 +1,6 @@
-# Scanner Compose Library
+﻿# Scanner Compose Library
 
-[简体中文](./README.zh-CN.md)
+[绠€浣撲腑鏂嘳(./README.zh-CN.md)
 
 `android.scanner.api` is a Kotlin Android library for Camera2 bitmap previews, Compose scan overlays, and QR/barcode bitmap conversion.
 
@@ -31,15 +31,15 @@ Add the permission to the host application's manifest and request it at runtime:
 
 ## Camera Preview
 
-`ScannerCamera` opens a Camera2 device and publishes the newest JPEG frame as `StateFlow<Bitmap?>`. Unsupported requested resolutions are replaced with the closest supported camera size. The selected size is available as `actualResolution`.
+`ScannerPreview` opens a Camera2 device and publishes the newest JPEG frame as `StateFlow<Bitmap?>`. Unsupported requested resolutions are replaced with the closest supported camera size. The selected size is available as `actualResolution`.
 
 ```kotlin
 @Composable
 fun CameraScreen(context: Context) {
     val camera = remember {
-        ScannerCamera(
+        ScannerPreview(
             context = context,
-            config = ScannerCameraConfig(
+            config = ScannerOverlayConfig(
                 cameraId = "0",
                 width = 1280,
                 height = 720,
@@ -55,7 +55,7 @@ fun CameraScreen(context: Context) {
         onDispose { camera.close() }
     }
 
-    ScannerPreview(bitmap = bitmap)
+    ScannerOverlay(bitmap = bitmap)
 }
 ```
 
@@ -66,7 +66,7 @@ fun CameraScreen(context: Context) {
 ```kotlin
 ScannerPreview(
     bitmap = bitmap,
-    config = ScannerPreviewConfig(
+    config = ScannerOverlayConfig(
         region = ScanRegion(left = 0.1f, top = 0.25f, right = 0.9f, bottom = 0.75f),
         outsideColor = Color.Black.copy(alpha = 0.55f),
         insideColor = Color.Transparent,
@@ -103,8 +103,8 @@ Logs include Camera2 open/close events, resolution selection, capture-session se
 
 All public classes are in `android.scanner.api`:
 
-- `ScannerCamera`, `ScannerCameraConfig`
-- `ScannerPreview`, `ScannerPreviewConfig`, `ScanRegion`
+- `ScannerPreview`, `ScannerOverlayConfig`
+- `ScannerPreview`, `ScannerOverlayConfig`, `ScanRegion`
 - `BarcodeCodec`, `BitmapSize`
 - `ScanResult`, `ScanOutcome`, `ScannerError`
 - `BarcodeFormat`, `ScannerConfig`, `ScanMode`, `ScannerState`, `ScannerController`
@@ -112,8 +112,9 @@ All public classes are in `android.scanner.api`:
 
 ## Lifecycle
 
-`ScannerCamera` owns a Camera2 device, capture session, image reader, and background thread. Call `close()` when the owner leaves composition or the screen is destroyed. Do not call camera methods before runtime permission is granted.
+`ScannerPreview` owns a Camera2 device, capture session, image reader, and background thread. Call `close()` when the owner leaves composition or the screen is destroyed. Do not call camera methods before runtime permission is granted.
 
 ## License
 
 MIT. See [LICENSE](./LICENSE) and [docs/NOTICE.md](./docs/NOTICE.md).
+
