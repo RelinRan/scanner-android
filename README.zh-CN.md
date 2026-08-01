@@ -1,5 +1,7 @@
 # Scanner Compose 扫码库
 
+[English](./README.md)
+
 `android.scanner.api` 是一个 Kotlin Android Library，提供 Camera2 实时 Bitmap、Compose 扫描区域预览，以及二维码/条形码 Bitmap 编解码能力。
 
 ## 环境要求

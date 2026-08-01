@@ -1,5 +1,7 @@
 # Scanner Compose Library
 
+[简体中文](./README.zh-CN.md)
+
 `android.scanner.api` is a Kotlin Android library for Camera2 bitmap previews, Compose scan overlays, and QR/barcode bitmap conversion.
 
 ## Requirements
